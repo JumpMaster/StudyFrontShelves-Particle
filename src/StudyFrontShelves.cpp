@@ -32,20 +32,26 @@ struct ShelfData {
     uint8_t color[3];
 };
 
-uint8_t shelfCount = 4;
+const uint8_t shelfCount = 7;
 
-ShelfData shelfData[4] = {
+ShelfData shelfData[shelfCount] = {
     { 95, false, false, LIGHT_EFFECT_NONE, 255, 0, {255, 255, 255} },
     { 95, false, false, LIGHT_EFFECT_NONE, 255, 0, {255, 255, 255} },
     { 96, false, false, LIGHT_EFFECT_NONE, 255, 0, {255, 255, 255} },
-    { 82, false, false, LIGHT_EFFECT_NONE, 255, 0, {255, 255, 255} }
+    { 82, false, false, LIGHT_EFFECT_NONE, 255, 0, {255, 255, 255} },
+    { 82, false, false, LIGHT_EFFECT_NONE, 255, 0, {255, 255, 255} },
+    { 35, false, false, LIGHT_EFFECT_NONE, 255, 0, {255, 255, 255} },
+    { 40, false, false, LIGHT_EFFECT_NONE, 255, 0, {255, 255, 255} }
 };
 
-Adafruit_NeoPixel shelves[] = {
+Adafruit_NeoPixel shelves[shelfCount] = {
   Adafruit_NeoPixel(shelfData[0].numLeds, D1, WS2813),
   Adafruit_NeoPixel(shelfData[1].numLeds, D2, WS2813),
   Adafruit_NeoPixel(shelfData[2].numLeds, D3, WS2813),
-  Adafruit_NeoPixel(shelfData[3].numLeds, D4, WS2813)
+  Adafruit_NeoPixel(shelfData[3].numLeds, D4, WS2813),
+  Adafruit_NeoPixel(shelfData[4].numLeds, D5, WS2813),
+  Adafruit_NeoPixel(shelfData[5].numLeds, D6, WS2813),
+  Adafruit_NeoPixel(shelfData[6].numLeds, D7, WS2813)
 };
 
 uint32_t resetTime = 0;
@@ -115,7 +121,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
 
 
     int8_t light = -1;
-    if (strlen(topic) > 29 && strncmp(topic, "home/study/light/front-shelf-", 29) == 0) 
+    if (strlen(topic) > 29 && strncmp(topic, "home/study/light/front-shelf/", 29) == 0) 
     {
         light = topic[29] - '0' - 1;
     }
@@ -164,15 +170,15 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
 
     char bufferTopic[50];
     char bufferPayload[15];
-    snprintf(bufferTopic, sizeof(bufferTopic), "home/study/light/front-shelf-%d/switch", light+1);
+    snprintf(bufferTopic, sizeof(bufferTopic), "home/study/light/front-shelf/%d/switch", light+1);
     mqttClient.publish(bufferTopic, shelfData[light].enabled ? "ON" : "OFF");
-    snprintf(bufferTopic, sizeof(bufferTopic), "home/study/light/front-shelf-%d/brightness", light+1);
+    snprintf(bufferTopic, sizeof(bufferTopic), "home/study/light/front-shelf/%d/brightness", light+1);
     snprintf(bufferPayload, sizeof(bufferPayload), "%d", shelfData[light].targetBrightness);
     mqttClient.publish(bufferTopic, bufferPayload);
-    snprintf(bufferTopic, sizeof(bufferTopic), "home/study/light/front-shelf-%d/rgb", light+1);
+    snprintf(bufferTopic, sizeof(bufferTopic), "home/study/light/front-shelf/%d/rgb", light+1);
     snprintf(bufferPayload, sizeof(bufferPayload), "%d,%d,%d", shelfData[light].color[0], shelfData[light].color[1], shelfData[light].color[2]);
     mqttClient.publish(bufferTopic, bufferPayload);
-    snprintf(bufferTopic, sizeof(bufferTopic), "home/study/light/front-shelf-%d/effect", light+1);
+    snprintf(bufferTopic, sizeof(bufferTopic), "home/study/light/front-shelf/%d/effect", light+1);
     mqttClient.publish(bufferTopic, shelfData[light].effect == LIGHT_EFFECT_RAINBOW ? "Rainbow" : "None");
 }
 
@@ -183,12 +189,11 @@ void connectToMQTT()
     if (mqttConnected) {
         Log.info("MQTT Connected");
         
+        mqttClient.subscribe("home/study/light/front-shelf/+/#");
+        
         char buffer[40];
         for (int i = 0; i < shelfCount; i++) {
-            snprintf(buffer, sizeof(buffer), "home/study/light/front-shelf-%d/#", i+1);
-            mqttClient.subscribe(buffer);
-
-            snprintf(buffer, sizeof(buffer), "home/study/light/front-shelf-%d/switch", i+1);
+            snprintf(buffer, sizeof(buffer), "home/study/light/front-shelf/%d/switch", i+1);
             mqttClient.publish(buffer, shelfData[i].enabled ? "ON" : "OFF");
         }
     }
@@ -226,6 +231,10 @@ void setup()
     pinMode(D1, OUTPUT); // Shelf 1
     pinMode(D2, OUTPUT); // Shelf 2
     pinMode(D3, OUTPUT); // Shelf 3
+    pinMode(D4, OUTPUT); // Shelf 4
+    pinMode(D5, OUTPUT); // Shelf 5
+    pinMode(D6, OUTPUT); // Shelf 6
+    pinMode(D6, OUTPUT); // Shelf 7
   
     digitalWrite(D0, LOW);
   
